@@ -1,5 +1,6 @@
 package JadeEngine;
 
+import Utilities.Time;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
@@ -14,11 +15,12 @@ public class Window {
     private int width, height;
     private String title;
 
-    private float r, g, b, a;
+    private static Scene currentScene;
     private boolean fadeToBlack = false;
 
     private static Window window = null;
     private long glfwWindow;
+    public float r, g, b, a;
 
     private Window() {
         this.width = 1920;
@@ -30,10 +32,24 @@ public class Window {
         a = 1;
     }
 
-    public static Window get()
-    {
-        if(Window.window == null)
-        {
+    public static void changeScene(int newScene) {
+        switch (newScene) {
+            case 0:
+                currentScene = new LevelEditorScene();
+                // currentScene.init();
+                break;
+            case 1:
+                currentScene = new LevelScene();
+                //currentScene.init();
+                break;
+            default:
+                assert false : "Unknown Scene '" + newScene + "'";
+                break;
+        }
+    }
+
+    public static Window get() {
+        if (Window.window == null) {
             Window.window = new Window();
         }
 
@@ -57,8 +73,6 @@ public class Window {
 
     public void init()
     {
-        System.out.println("Inside Init |");
-
         // Setup error callback
         GLFWErrorCallback.createPrint(System.err).set();
 
@@ -99,35 +113,30 @@ public class Window {
         // GL bindings
         GL.createCapabilities();
 
-        System.out.println("Init Complete |");
+        Window.changeScene(0);
     }
 
-    public void loop()
-    {
-        System.out.println("Inside loop function |");
+    public void loop() {
+        float beginTime = Time.getTime();
+        float endTime;
+        float deltaTime = -1.0f;
 
-        while(!glfwWindowShouldClose(glfwWindow)) {
+        while (!glfwWindowShouldClose(glfwWindow)) {
             // Poll Events
             glfwPollEvents();
 
             glClearColor(r, g, b, a);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            // If fadeToBlack is true, perform the fading effect
-            if (fadeToBlack) {
-                r = Math.max(r - 0.01f, 0);
-                g = Math.max(g - 0.01f, 0);
-                b = Math.max(b - 0.01f, 0);
-            }
-
-            // Do something if space key is pressed
-            if (KeyListener.isKeyPressed(GLFW_KEY_SPACE)) {
-                fadeToBlack = true;
+            if (deltaTime >= 0) {
+                currentScene.update(deltaTime);
             }
 
             glfwSwapBuffers(glfwWindow);
-        }
 
-        System.out.println("..........");
+            endTime = Time.getTime();
+            deltaTime = endTime - beginTime;
+            beginTime = endTime;
+        }
     }
 }
